@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -27,25 +28,26 @@ pipeline {
             }
         }
 
-        stage('Build Complete') {
+        stage('Docker Push') {
             steps {
-                echo 'Flask application and Docker image build completed!'
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USERNAME',
+                    passwordVariable: 'DOCKER_PASSWORD'
+                )]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker tag flask-devops-app:${BUILD_NUMBER} ${DOCKER_USERNAME}/flask-devops-app:${BUILD_NUMBER}
+                        docker push ${DOCKER_USERNAME}/flask-devops-app:${BUILD_NUMBER}
+                    '''
+                }
             }
         }
-    }
-}
-stage('Docker Push') {
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'dockerhub-credentials',
-            usernameVariable: 'DOCKER_USERNAME',
-            passwordVariable: 'DOCKER_PASSWORD'
-        )]) {
-            sh '''
-                echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                docker tag flask-devops-app:${BUILD_NUMBER} ${DOCKER_USERNAME}/flask-devops-app:${BUILD_NUMBER}
-                docker push ${DOCKER_USERNAME}/flask-devops-app:${BUILD_NUMBER}
-            '''
+
+        stage('Build Complete') {
+            steps {
+                echo 'Flask application built and pushed to Docker Hub!'
+            }
         }
     }
 }
