@@ -21,9 +21,15 @@ pipeline {
             }
         }
 
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t flask-devops-app:${BUILD_NUMBER} .'
+            }
+        }
+
         stage('Build Complete') {
             steps {
-                echo 'Flask application build completed!'
+                echo 'Flask application and Docker image build completed!'
             }
         }
     }
